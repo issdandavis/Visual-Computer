@@ -7,13 +7,13 @@ import { GoogleGenAI, Tool, Type } from "@google/genai";
 // Always use 'riftrunner' below. Do not change this model name. 
 export const MODEL_NAME = "riftrunner"; 
 
-let aiClient: GoogleGenAI | null = null;
-
+/**
+ * Creates a fresh instance of the GenAI client.
+ * GUIDELINE: Create a new GoogleGenAI instance right before making an API call 
+ * to ensure it always uses the most up-to-date API key from the dialog.
+ */
 export const getAiClient = () => {
-    if (!aiClient) {
-        aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    }
-    return aiClient;
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const HOME_TOOLS: Tool[] = [

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useState, useRef, useEffect } from 'react';
-import { MousePointer2, PenLine, Play, Mail, Presentation, Folder, Loader2, FileText, Image as ImageIcon, Gamepad2, Eraser, Share2, Undo2, Redo2, RefreshCw, ArrowUpCircle } from 'lucide-react';
+import { MousePointer2, PenLine, Play, Mail, Presentation, Folder, Loader2, FileText, Image as ImageIcon, Gamepad2, Eraser, Share2, Undo2, Redo2, RefreshCw, ArrowUpCircle, ShieldCheck, ExternalLink, Key } from 'lucide-react';
 import { Modality, GenerateContentResponse } from "@google/genai";
 import { AppId, DesktopItem, Stroke, Email } from './types';
 import { HomeScreen } from './components/apps/HomeScreen';
@@ -89,7 +89,6 @@ export const App: React.FC = () => {
     const [nextZIndex, setNextZIndex] = useState(100);
     const [inkMode, setInkMode] = useState(false);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
-    // Fix: Corrected state type from Stroke[][] to Stroke[] to store a stack of single strokes.
     const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const [desktopItems, setDesktopItems] = useState<(DesktopItem | null)[]>(INITIAL_DESKTOP_ITEMS);
     const [emails, setEmails] = useState<Email[]>(INITIAL_EMAILS);
@@ -98,17 +97,38 @@ export const App: React.FC = () => {
     const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
     const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
     const [updateProgress, setUpdateProgress] = useState(0);
+    const [isApiKeySelected, setIsApiKeySelected] = useState<boolean>(true);
     const timeoutRef = useRef<number | null>(null);
+
+    // Initial check for API Key
+    useEffect(() => {
+        const checkKey = async () => {
+            if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setIsApiKeySelected(hasKey);
+            }
+        };
+        checkKey();
+    }, []);
+
+    const handleOpenSelectKey = async () => {
+        if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+            await window.aistudio.openSelectKey();
+            setIsApiKeySelected(true); // Assume success per guidelines
+        }
+    };
 
     // Update system simulation / Service Worker logic
     useEffect(() => {
+        if (!isApiKeySelected) return;
+
         // Simulate background update check
         const checkUpdates = async () => {
             setUpdateStatus('checking');
             await new Promise(r => setTimeout(r, 2000));
             
             // Randomly decide if update is available for demo purposes
-            const hasUpdate = Math.random() > 0.3;
+            const hasUpdate = Math.random() > 0.8;
             if (hasUpdate) {
                 setUpdateStatus('downloading');
                 let progress = 0;
@@ -135,11 +155,9 @@ export const App: React.FC = () => {
                 window.location.reload();
             });
         }
-    }, []);
+    }, [isApiKeySelected]);
 
     const handleRestartUpdate = () => {
-        // In a real app with a Service Worker, we would send a message to skipWaiting
-        // registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         window.location.reload();
     };
 
@@ -162,7 +180,6 @@ export const App: React.FC = () => {
         const newStrokes = [...strokes];
         const last = newStrokes.pop();
         if (last) {
-            // Fix: last is a Stroke, and prev is Stroke[], making the combined array Stroke[].
             setRedoStack(prev => [...prev, last]);
             setStrokes(newStrokes);
         }
@@ -173,7 +190,6 @@ export const App: React.FC = () => {
         const newRedo = [...redoStack];
         const last = newRedo.pop();
         if (last) {
-            // Fix: last is a Stroke, and prev is Stroke[], making the combined array Stroke[].
             setStrokes(prev => [...prev, last]);
             setRedoStack(newRedo);
         }
@@ -181,7 +197,7 @@ export const App: React.FC = () => {
 
     const handleStrokeComplete = (stroke: Stroke) => {
         setStrokes(prev => [...prev, stroke]);
-        setRedoStack([]); // New drawing action clears redo history
+        setRedoStack([]); 
     };
 
     const clearInk = () => {
@@ -267,6 +283,8 @@ export const App: React.FC = () => {
                 useCORS: true
             });
             const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            
+            // GUIDELINE: Create a new GoogleGenAI instance right before making an API call
             const ai = getAiClient();
             
             let activeTools = HOME_TOOLS;
@@ -356,9 +374,16 @@ export const App: React.FC = () => {
             } else {
                 showToast("No gestures detected. Try drawing more clearly.", undefined, true);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            showToast("Gemini Processing Error. Please try again.", "Critical", true);
+            // GUIDELINE: If the request fails with 404 Not Found, prompt for key re-selection
+            if (e.message?.includes("Requested entity was not found") || e.status === 404) {
+                setIsApiKeySelected(false);
+                handleOpenSelectKey();
+                showToast("Security context expired. Please re-authorize the API key.", "Auth Error", true);
+            } else {
+                showToast("Gemini Processing Error. Please try again.", "Critical", true);
+            }
         } finally {
             setIsProcessing(false);
             clearInk();
@@ -367,6 +392,41 @@ export const App: React.FC = () => {
 
     const buttonBaseClasses = "relative overflow-hidden p-4 rounded-full transition-all duration-300 border-t border-white/5 shadow-lg active:scale-90 disabled:cursor-not-allowed";
     const glossOverlay = <div className="absolute inset-0 bg-[radial-gradient(at_top_left,_rgba(255,255,255,0.15)_0%,_transparent_60%)] pointer-events-none" />;
+
+    // API Key Selection Guard Screen
+    if (!isApiKeySelected) {
+        return (
+            <div className="h-full w-full bg-[#050508] flex items-center justify-center p-6 text-center">
+                <div className="max-w-md w-full flex flex-col items-center gap-8">
+                    <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-indigo-600 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+                        <ShieldCheck size={48} className="text-white" />
+                    </div>
+                    <div className="space-y-4">
+                        <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase">System Guard</h1>
+                        <p className="text-zinc-400 text-sm font-medium leading-relaxed uppercase tracking-widest">
+                            Gemini Ink requires a valid AI Studio API key from a paid GCP project to initialize high-security neural processing.
+                        </p>
+                    </div>
+                    
+                    <button 
+                        onClick={handleOpenSelectKey}
+                        className="group relative w-full px-8 py-5 bg-white text-black font-black uppercase italic tracking-[0.2em] rounded-3xl transition-all hover:scale-[1.02] active:scale-95 shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-4"
+                    >
+                        <Key size={20} /> Connect Account
+                    </button>
+
+                    <a 
+                        href="https://ai.google.dev/gemini-api/docs/billing" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                    >
+                        Billing Documentation <ExternalLink size={12} />
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full w-full bg-[#050508] text-white font-sans overflow-hidden relative selection:bg-sky-500/30" onPointerDownCapture={(e) => {
