@@ -8,7 +8,7 @@ declare global {
     var html2canvas: (element: HTMLElement, options?: any) => Promise<HTMLCanvasElement>;
 }
 
-export type AppId = 'home' | 'mail' | 'slides' | 'snake' | 'folder' | 'notepad' | 'automator';
+export type AppId = 'home' | 'mail' | 'slides' | 'snake' | 'folder' | 'notepad' | 'automator' | 'code' | 'sudoku' | 'wordle';
 
 export interface DesktopItem {
     id: string;
