@@ -23,15 +23,19 @@ import { DraggableWindow } from './components/DraggableWindow';
 import { InkLayer } from './components/InkLayer';
 import { getAiClient, HOME_TOOLS, MAIL_TOOLS, AUTOMATOR_TOOLS, MODEL_NAME, SYSTEM_INSTRUCTION } from './lib/gemini';
 import { NotepadApp } from './components/apps/NotepadApp';
+import { PollyPadApp } from './components/apps/PollyPadApp';
+import { FleetDashboardApp } from './components/apps/FleetDashboardApp';
 
 const APP_VERSION = "v1.5.0";
 
 const INITIAL_DESKTOP_ITEMS: DesktopItem[] = [
+    { id: 'pollypad', name: 'Polly Pad', type: 'app', icon: FileText, appId: 'pollypad', bgColor: 'bg-emerald-600' },
+    { id: 'fleet', name: 'Fleet', type: 'app', icon: ShieldCheck, appId: 'fleet', bgColor: 'bg-indigo-600' },
     { id: 'mail', name: 'Mail', type: 'app', icon: Mail, appId: 'mail', bgColor: 'bg-blue-600' },
-    { id: 'automator', name: 'Automator', type: 'app', icon: Share2, appId: 'automator', bgColor: 'bg-indigo-600' },
+    { id: 'automator', name: 'Automator', type: 'app', icon: Share2, appId: 'automator', bgColor: 'bg-violet-600' },
     { id: 'code', name: 'IDE', type: 'app', icon: Code, appId: 'code', bgColor: 'bg-zinc-800' },
     { id: 'slides', name: 'Slides', type: 'app', icon: Presentation, appId: 'slides', bgColor: 'bg-orange-600' },
-    { id: 'snake', name: 'Alien Defense', type: 'app', icon: Gamepad2, appId: 'snake', bgColor: 'bg-emerald-600' },
+    { id: 'snake', name: 'Alien Defense', type: 'app', icon: Gamepad2, appId: 'snake', bgColor: 'bg-rose-600' },
     { id: 'sudoku', name: 'Sudoku', type: 'app', icon: Hash, appId: 'sudoku', bgColor: 'bg-purple-600' },
     { id: 'wordle', name: 'Wordle', type: 'app', icon: TypeIcon, appId: 'wordle', bgColor: 'bg-amber-600' },
     { 
@@ -141,6 +145,8 @@ export const App: React.FC = () => {
         const isMobile = screenWidth < 768;
 
         let initialSize = { width: 640, height: 480 };
+        if (item.appId === 'pollypad') initialSize = { width: 500, height: 700 };
+        if (item.appId === 'fleet') initialSize = { width: 1000, height: 700 };
         if (item.appId === 'mail') initialSize = { width: 900, height: 700 };
         if (item.appId === 'automator') initialSize = { width: 1000, height: 800 };
         if (item.appId === 'code') initialSize = { width: 900, height: 750 };
@@ -266,7 +272,9 @@ export const App: React.FC = () => {
 
                 {openWindows.map(win => {
                     let content = null;
-                    if (win.item.appId === 'mail') content = <MailApp emails={emails} />;
+                    if (win.item.appId === 'pollypad') content = <PollyPadApp />;
+                    else if (win.item.appId === 'fleet') content = <FleetDashboardApp />;
+                    else if (win.item.appId === 'mail') content = <MailApp emails={emails} />;
                     else if (win.item.appId === 'automator') content = <AutomatorApp />;
                     else if (win.item.appId === 'slides') content = <SlidesApp />;
                     else if (win.item.appId === 'snake') content = <AlienDefense />;

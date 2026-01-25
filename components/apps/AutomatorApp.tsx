@@ -90,7 +90,7 @@ export const AutomatorApp: React.FC = () => {
                     </div>
                     <div className="space-y-2 h-32 overflow-hidden">
                         {logs.map((log, i) => (
-                            <p key={i} className="text-[9px] font-mono text-zinc-500 truncate"><span className="text-sky-500/60 italic mr-1">>>></span> {log}</p>
+                            <p key={i} className="text-[9px] font-mono text-zinc-500 truncate"><span className="text-sky-500/60 italic mr-1">{">>>"}</span> {log}</p>
                         ))}
                     </div>
                 </div>
